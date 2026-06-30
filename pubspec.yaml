@@ -1,0 +1,54 @@
+name: safepoint_mobile
+description: SafePoint - Sistema de Predicción de Seguridad Ciudadana - Jesús María, Lima
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # HTTP y API
+  http: ^1.2.0
+  dio: ^5.4.0
+  
+  # Almacenamiento local
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+  
+  # Mapas
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+  
+  # UI
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  
+  # Gráficos
+  fl_chart: ^0.68.0
+  
+  # Iconos
+  cupertino_icons: ^1.0.6
+  
+  # GPS/Geolocalización
+  geolocator: ^11.0.0
+  
+  # Estado
+  provider: ^6.1.2
+  intl: ^0.20.2
+  flutter_map_marker_cluster: ^1.3.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
