@@ -36,9 +36,8 @@ class Prediccion {
       );
 
   String get nivelRiesgo {
-    if (_nivelRiesgo != null) return _nivelRiesgo!;
-    if (probabilidad >= 0.7) return 'ALTO';
-    if (probabilidad >= 0.4) return 'MEDIO';
-    return 'BAJO';
+    if (probabilidad >= 0.66) return 'ALTO';
+if (probabilidad >= 0.33) return 'MEDIO';
+return 'BAJO';
   }
 }

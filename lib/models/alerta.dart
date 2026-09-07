@@ -34,8 +34,8 @@
       );
 
   String get nivelRiesgo {
-    if (probabilidad >= 0.7) return 'ALTO';
-    if (probabilidad >= 0.4) return 'MEDIO';
+    if (probabilidad >= 0.66) return 'ALTO';
+    if (probabilidad >= 0.33) return 'MEDIO';
     return 'BAJO';
   }
 }

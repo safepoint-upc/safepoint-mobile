@@ -35,7 +35,7 @@ class AlertasService {
     try {
       final token = await _auth.getToken();
       if (token == null) return false;
-      await _dio.put(
+      await _dio.patch(
         '/alertas/$id/desactivar',
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
