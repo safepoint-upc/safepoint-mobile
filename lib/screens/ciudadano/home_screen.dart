@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
-import '../welcome_screen.dart';
-import 'mapa_screen.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
+import 'mapa_screen.dart';
 import 'estadisticas_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,21 +14,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const MapaScreen(),
-    const EstadisticasScreen(),
+  final List<Widget> _screens = const [
+    MapaScreen(),
+    EstadisticasScreen(),
   ];
 
-  void _logout(BuildContext context) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.logout();
-    if (context.mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        (_) => false,
-      );
-    }
+  // Vuelve al welcome — el ciudadano no tiene sesión que cerrar
+  void _salir(BuildContext context) {
+    context.go('/welcome');
   }
 
   @override
@@ -38,22 +29,29 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('SafePoint Ciudadano'),
+        title: const Row(
+          children: [
+            Icon(Icons.shield, color: AppTheme.primary, size: 20),
+            SizedBox(width: 8),
+            Text('SafePoint'),
+          ],
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context),
+          // Botón para volver a la pantalla de bienvenida
+          TextButton.icon(
+            onPressed: () => _salir(context),
+            icon: const Icon(Icons.arrow_back, color: AppTheme.textSecondary, size: 18),
+            label: const Text(
+              'Salir',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+            ),
           ),
         ],
       ),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.map_outlined),

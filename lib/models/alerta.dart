@@ -1,7 +1,7 @@
 ﻿class Alerta {
   final int id;
-  final String tipoDelito;
   final String sector;
+  final String? cuadrante;
   final String franjaHoraria;
   final double probabilidad;
   final double latitud;
@@ -11,8 +11,8 @@
 
   Alerta({
     required this.id,
-    required this.tipoDelito,
     required this.sector,
+    this.cuadrante,
     required this.franjaHoraria,
     required this.probabilidad,
     required this.latitud,
@@ -22,20 +22,14 @@
   });
 
   factory Alerta.fromJson(Map<String, dynamic> json) => Alerta(
-        id: json['id'],
-        tipoDelito: json['tipo_delito'] ?? '',
-        sector: json['sector'] ?? '',
-        franjaHoraria: json['franja_horaria'] ?? '',
-        probabilidad: (json['probabilidad'] ?? 0).toDouble(),
-        latitud: (json['latitud'] ?? 0).toDouble(),
-        longitud: (json['longitud'] ?? 0).toDouble(),
-        activa: json['activa'] ?? true,
-        creadoEn: json['creado_en'] != null ? DateTime.parse(json['creado_en']) : DateTime.now(),
-      );
-
-  String get nivelRiesgo {
-    if (probabilidad >= 0.66) return 'ALTO';
-    if (probabilidad >= 0.33) return 'MEDIO';
-    return 'BAJO';
-  }
+    id: json['id'],
+    sector: json['sector'] ?? '',
+    cuadrante: json['cuadrante'],
+    franjaHoraria: json['franja_horaria'] ?? '',
+    probabilidad: (json['probabilidad'] as num).toDouble(),
+    latitud: (json['latitud'] as num).toDouble(),
+    longitud: (json['longitud'] as num).toDouble(),
+    activa: json['activa'] ?? true,
+    creadoEn: DateTime.parse(json['creado_en']),
+  );
 }

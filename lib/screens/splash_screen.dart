@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'welcome_screen.dart';
-import 'agente/home_screen.dart' as agente_home;
-import 'ciudadano/home_screen.dart' as ciudadano_home;
+import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,77 +19,88 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigate() async {
+    // Espera mínima para mostrar el splash
     await Future.delayed(const Duration(milliseconds: 1800));
     if (!mounted) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    // Espera a que el AuthProvider termine de verificar si hay sesión guardada
     while (authProvider.isLoading) {
       await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
     }
     if (!mounted) return;
 
+    // Redirige según si hay sesión activa y cuál es el rol del usuario
     if (authProvider.isAuthenticated) {
-      if (authProvider.usuario!.esAgente) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const agente_home.HomeScreen()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ciudadano_home.HomeScreen()),
-        );
-      }
+      context.go(authProvider.usuario!.esAgente ? '/agente' : '/ciudadano');
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      );
+      context.go('/welcome');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0f1e),
+      backgroundColor: AppTheme.background,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Logo
             Container(
               width: 88,
               height: 88,
               decoration: BoxDecoration(
-                color: const Color(0xFF1e293b),
+                color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: const Color(0xFF3b82f6).withValues(alpha: 0.35),
+                  color: AppTheme.primary.withValues(alpha: 0.35),
                   width: 1.5,
                 ),
               ),
-              child: const Icon(Icons.shield_outlined, size: 48, color: Color(0xFF3b82f6)),
+              child: const Icon(
+                Icons.shield_outlined,
+                size: 48,
+                color: AppTheme.primary,
+              ),
             ),
             const SizedBox(height: 24),
+            // Nombre de la app
             RichText(
               text: const TextSpan(
                 children: [
                   TextSpan(
                     text: 'Safe',
-                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF3b82f6), letterSpacing: -0.5),
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primary,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                   TextSpan(
                     text: 'Point',
-                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.5),
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 48),
+            // Indicador de carga
             const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF3b82f6)),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppTheme.primary,
+              ),
             ),
           ],
         ),

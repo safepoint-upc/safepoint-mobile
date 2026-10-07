@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'ciudadano/home_screen.dart' as ciudadano_home;
+import 'package:go_router/go_router.dart';
+import '../theme/app_theme.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -8,7 +8,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0f1e),
+      backgroundColor: AppTheme.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -16,25 +16,28 @@ class WelcomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
+
               // Logo
               Container(
                 width: 88,
                 height: 88,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1e293b),
+                  color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: const Color(0xFF3b82f6).withValues(alpha: 0.35),
+                    color: AppTheme.primary.withValues(alpha: 0.35),
                     width: 1.5,
                   ),
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
                   size: 48,
-                  color: Color(0xFF3b82f6),
+                  color: AppTheme.primary,
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Nombre de la app
               RichText(
                 text: const TextSpan(
                   children: [
@@ -43,7 +46,7 @@ class WelcomeScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 38,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF3b82f6),
+                        color: AppTheme.primary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -60,27 +63,28 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
+
+              // Descripción
               const Text(
                 'Sistema de seguridad ciudadana\npara Jesús María',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Color(0xFF64748b),
+                  color: AppTheme.textMuted,
                   fontSize: 15,
                   height: 1.5,
                 ),
               ),
+
               const Spacer(flex: 2),
-              // Botón Agente
+
+              // Botón para agentes y coordinadores — requiere login
               SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  ),
+                  onPressed: () => context.push('/login'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3b82f6),
+                    backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -104,18 +108,16 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              // Botón Ciudadano
+
+              // Botón para ciudadanos — entra directo sin login
               SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: OutlinedButton(
-                  onPressed: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ciudadano_home.HomeScreen()),
-                  ),
+                  onPressed: () => context.go('/ciudadano'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    side: const BorderSide(color: Color(0xFF334155), width: 1.5),
+                    side: const BorderSide(color: AppTheme.border, width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -136,11 +138,14 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
               const Spacer(flex: 1),
+
+              // Pie de página
               Text(
                 'Municipalidad de Jesús María · Lima, Perú',
                 style: TextStyle(
-                  color: const Color(0xFF64748b).withValues(alpha: 0.6),
+                  color: AppTheme.textMuted.withValues(alpha: 0.6),
                   fontSize: 11,
                 ),
               ),

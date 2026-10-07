@@ -1,126 +1,114 @@
-import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
-import '../config/constants.dart';
+import 'package:flutter/foundation.dart';
+import '../core/network/api_client.dart';
 import '../models/incidente.dart';
-import 'auth_service.dart';
 
 class IncidentesService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
-  final AuthService _auth = AuthService();
+  final Dio _dio = ApiClient().dio;
 
-  Future<List<Incidente>> getIncidentes({
+  // Obtiene incidentes con coordenadas para mostrar en el mapa
+  Future<List<Incidente>> getIncidentesMapa({
     String? sector,
     String? tipoDelito,
     String? franjaHoraria,
-    String? anio,
+    int? anio,
     String? mes,
     String? diaSemana,
-    int porPagina = 6000,
-    int pagina = 1,
   }) async {
     try {
-      final token = await _auth.getToken();
-      final Map<String, dynamic> params = {
-        'por_pagina': porPagina,
-        'pagina': pagina,
-      };
-      if (sector != null && sector != 'Todos') params['sector'] = sector;
-      if (tipoDelito != null && tipoDelito != 'Todos') params['tipo_delito'] = tipoDelito;
-      if (franjaHoraria != null && franjaHoraria != 'Todas') params['franja_horaria'] = franjaHoraria;
-      if (anio != null && anio != 'Todos') params['anio'] = anio;
-      if (mes != null && mes != 'Todos') params['mes'] = mes;
-      if (diaSemana != null && diaSemana != 'Todos') params['dia_semana'] = diaSemana;
-
-      final headers = token != null
-          ? {'Authorization': 'Bearer $token'}
-          : <String, String>{};
+      final Map<String, dynamic> params = {};
+      if (sector != null) params['sector'] = sector;
+      if (tipoDelito != null) params['tipo_delito'] = tipoDelito;
+      if (franjaHoraria != null) params['franja_horaria'] = franjaHoraria;
+      if (anio != null) params['anio'] = anio;
+      if (mes != null) params['mes'] = mes;
+      if (diaSemana != null) params['dia_semana'] = diaSemana;
 
       final response = await _dio.get(
-        '/incidentes/',
-        queryParameters: params,
-        options: Options(headers: headers),
+        '/incidentes/mapa',
+        queryParameters: params.isNotEmpty ? params : null,
       );
-
-      // El backend retorna {"total": N, "pagina": N, "por_pagina": N, "datos": [...]}
-      final data = response.data;
-      if (data is Map && data.containsKey('datos')) {
-        return (data['datos'] as List)
-            .map((i) => Incidente.fromJson(i))
-            .toList();
-      }
-      // Fallback por si retorna lista directa
-      if (data is List) {
-        return data.map((i) => Incidente.fromJson(i)).toList();
-      }
-      return [];
-    } catch (e) {
-      debugPrint('ERROR getIncidentes: $e');
-      return [];
-    }
-  }
-
-  Future<List<Incidente>> getIncidentesMapa() async {
-    try {
-      // Endpoint is public - no auth needed
-      final response = await _dio.get('/incidentes/mapa');
-      debugPrint('getIncidentesMapa response type: ${response.data.runtimeType}, length: ${response.data is List ? (response.data as List).length : "N/A"}');
-      if (response.data is List) {
-        return (response.data as List)
-            .map((i) => Incidente.fromJson(i))
-            .toList();
-      }
-      return [];
+      return (response.data as List)
+          .map((e) => Incidente.fromJson(e))
+          .toList();
     } catch (e) {
       debugPrint('ERROR getIncidentesMapa: $e');
       return [];
     }
   }
 
+  // Obtiene estadísticas generales: total, por tipo de delito y por sector
   Future<Map<String, dynamic>> getEstadisticas() async {
     try {
-      final token = await _auth.getToken();
-      final headers = token != null
-          ? {'Authorization': 'Bearer $token'}
-          : <String, String>{};
-      final response = await _dio.get(
-        '/incidentes/estadisticas',
-        options: Options(headers: headers),
-      );
-      return response.data ?? {};
+      final response = await _dio.get('/incidentes/estadisticas');
+      return Map<String, dynamic>.from(response.data);
     } catch (e) {
+      debugPrint('ERROR getEstadisticas: $e');
       return {};
     }
   }
 
-  Future<Map<String, dynamic>> getPorFranja() async {
+  // Obtiene cantidad de incidentes agrupados por franja horaria
+  // Útil para gráficas en la pantalla de estadísticas
+  Future<List<Map<String, dynamic>>> getIncidentesPorFranja({
+    String? sector,
+  }) async {
     try {
-      final token = await _auth.getToken();
-      final headers = token != null
-          ? {'Authorization': 'Bearer $token'}
-          : <String, String>{};
+      final Map<String, dynamic> params = {};
+      if (sector != null) params['sector'] = sector;
+
       final response = await _dio.get(
         '/incidentes/por-franja',
-        options: Options(headers: headers),
+        queryParameters: params.isNotEmpty ? params : null,
       );
-      return response.data ?? {};
+      return List<Map<String, dynamic>>.from(response.data);
     } catch (e) {
-      return {};
+      debugPrint('ERROR getIncidentesPorFranja: $e');
+      return [];
     }
   }
 
-  Future<Map<String, dynamic>> getPorTipo() async {
+  // Obtiene cantidad de incidentes agrupados por tipo de delito
+  Future<List<Map<String, dynamic>>> getIncidentesPorTipo({
+    String? sector,
+    String? franjaHoraria,
+  }) async {
     try {
-      final token = await _auth.getToken();
-      final headers = token != null
-          ? {'Authorization': 'Bearer $token'}
-          : <String, String>{};
+      final Map<String, dynamic> params = {};
+      if (sector != null) params['sector'] = sector;
+      if (franjaHoraria != null) params['franja_horaria'] = franjaHoraria;
+
       final response = await _dio.get(
         '/incidentes/por-tipo',
-        options: Options(headers: headers),
+        queryParameters: params.isNotEmpty ? params : null,
       );
-      return response.data ?? {};
+      return List<Map<String, dynamic>>.from(response.data);
     } catch (e) {
-      return {};
+      debugPrint('ERROR getIncidentesPorTipo: $e');
+      return [];
+    }
+  }
+
+  // Obtiene la matriz semanal de incidentes por día y franja horaria
+  // Se usa para el heatmap en la pantalla de estadísticas
+  Future<List<Map<String, dynamic>>> getMatrizSemanal() async {
+    try {
+      final response = await _dio.get('/incidentes/matriz-semanal');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      debugPrint('ERROR getMatrizSemanal: $e');
+      return [];
+    }
+  }
+
+  // Obtiene historial de incidentes agrupados por año y mes en orden cronológico
+  Future<List<Map<String, dynamic>>> getHistorial() async {
+    try {
+      final response = await _dio.get('/incidentes/historial');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      debugPrint('ERROR getHistorial: $e');
+      return [];
     }
   }
 }

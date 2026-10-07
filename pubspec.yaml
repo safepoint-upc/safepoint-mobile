@@ -9,35 +9,38 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # HTTP y API
   dio: ^5.4.0
-  
+
   # Almacenamiento local
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^9.0.0
-  
+
   # Mapas
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
-  
+
   # UI
   google_fonts: ^6.1.0
   flutter_svg: ^2.0.9
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
-  
+
   # Gráficos
   fl_chart: ^0.68.0
-  
+
   # Iconos
   cupertino_icons: ^1.0.6
-  
+
   # GPS/Geolocalización
   geolocator: ^11.0.0
-  
-  # Estado
+
+  # Estado y navegación
   provider: ^6.1.2
+  go_router: ^13.0.0
+
+  # Utilidades
   intl: ^0.20.2
   flutter_map_marker_cluster: ^1.3.6
 
@@ -51,3 +54,4 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/Cuadrantes.geojson

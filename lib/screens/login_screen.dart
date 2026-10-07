@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
-import 'agente/home_screen.dart' as agente_home;
-import 'ciudadano/home_screen.dart' as ciudadano_home;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() async {
+  Future<void> _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -40,22 +40,13 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.login(email, password);
 
     if (success && mounted) {
-      if (authProvider.usuario!.esAgente) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const agente_home.HomeScreen()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ciudadano_home.HomeScreen()),
-        );
-      }
+      // GoRouter redirige automáticamente según el rol del usuario
+      context.go(authProvider.usuario!.esAgente ? '/agente' : '/ciudadano');
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Credenciales incorrectas'),
-          backgroundColor: Color(0xFFef4444),
+          backgroundColor: AppTheme.riskHigh,
         ),
       );
     }
@@ -66,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0f1e),
+      backgroundColor: AppTheme.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28.0),
@@ -81,17 +72,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1e293b),
+                        color: AppTheme.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: const Color(0xFF3b82f6).withValues(alpha: 0.3),
+                          color: AppTheme.primary.withValues(alpha: 0.3),
                           width: 1.5,
                         ),
                       ),
                       child: const Icon(
                         Icons.shield_outlined,
                         size: 44,
-                        color: Color(0xFF3b82f6),
+                        color: AppTheme.primary,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -103,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF3b82f6),
+                              color: AppTheme.primary,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -123,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text(
                       'Jesús María más seguro',
                       style: TextStyle(
-                        color: Color(0xFF64748b),
+                        color: AppTheme.textMuted,
                         fontSize: 14,
                         letterSpacing: 0.2,
                       ),
@@ -135,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text(
                 'Correo electrónico',
                 style: TextStyle(
-                  color: Color(0xFF94a3b8),
+                  color: AppTheme.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -151,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text(
                 'Contraseña',
                 style: TextStyle(
-                  color: Color(0xFF94a3b8),
+                  color: AppTheme.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -167,10 +158,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     _obscurePassword
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined,
-                    color: const Color(0xFF64748b),
+                    color: AppTheme.textMuted,
                     size: 20,
                   ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
               const SizedBox(height: 36),
@@ -184,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text(
                   'Sistema de predicción de seguridad ciudadana',
                   style: TextStyle(
-                    color: const Color(0xFF64748b).withValues(alpha: 0.6),
+                    color: AppTheme.textMuted.withValues(alpha: 0.6),
                     fontSize: 11,
                   ),
                 ),
