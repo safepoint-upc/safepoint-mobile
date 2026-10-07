@@ -4,11 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../config/constants.dart';
 import '../../services/alertas_service.dart';
 import '../../services/predicciones_service.dart';
 import '../../services/incidentes_service.dart';
 import '../../models/alerta.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/bar_chart_card.dart';
 import 'mapa_screen.dart';
 import 'alertas_screen.dart';
 import 'incidentes_screen.dart';
@@ -113,6 +115,9 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
   double _f1Score = 0.0;
   String _versionModelo = '';
 
+  List<Map<String, dynamic>> _incidentesPorFranja = [];
+  List<Map<String, dynamic>> _prediccionesPorCuadrante = [];
+
   // Sectores disponibles del 1 al 9
   static const List<String> _sectoresDisponibles = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -127,33 +132,48 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      // Cargamos todo en paralelo
-      final results = await Future.wait([
+      // 1. Cargas esenciales ultrarrápidas
+      final essentialResults = await Future.wait([
         _alertasService.getAlertasActivas(),
         _prediccionesService.getPrediccionesPorSector(),
         _incidentesService.getEstadisticas(),
         _prediccionesService.getMetricas(),
+        _incidentesService.getIncidentesPorFranja(),
       ]);
 
-      final alertas = results[0] as List<Alerta>;
-      final sectores = results[1] as List<Map<String, dynamic>>;
-      final estadisticas = results[2] as Map<String, dynamic>;
-      final metricas = results[3] as Map<String, dynamic>;
+      final alertas = essentialResults[0] as List<Alerta>;
+      final sectores = essentialResults[1] as List<Map<String, dynamic>>;
+      final estadisticas = essentialResults[2] as Map<String, dynamic>;
+      final metricas = essentialResults[3] as Map<String, dynamic>;
+      final incidentesPorFranja = essentialResults[4] as List<Map<String, dynamic>>;
 
       if (mounted) {
         setState(() {
           _alertasActivas = alertas;
           _sectores = sectores;
           _totalIncidentes = estadisticas['total_incidentes'] ?? 0;
-          // Si no hay métricas disponibles el backend devuelve {mensaje: ...}
           if (!metricas.containsKey('mensaje')) {
             _f1Score = (metricas['f1_score'] as num?)?.toDouble() ?? 0.0;
             _versionModelo = metricas['version'] ?? '';
           }
+          _incidentesPorFranja = incidentesPorFranja;
           _isLoading = false;
         });
         widget.onAlertasLoaded(_alertasActivas.length);
       }
+
+      // 2. Carga secundaria de predicciones por cuadrante (6000 registros en background)
+      _prediccionesService.getPrediccionesPorCuadrante(
+        franjaHoraria: AppConstants.getFranjaActual(),
+      ).then((prediccionesPorCuadrante) {
+        if (mounted) {
+          setState(() {
+            _prediccionesPorCuadrante = prediccionesPorCuadrante;
+          });
+        }
+      }).catchError((e) {
+        debugPrint('ERROR cargando predicciones por cuadrante: $e');
+      });
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -167,14 +187,55 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
         .toList();
   }
 
-  // Sector con mayor probabilidad promedio de riesgo
-  String get _sectorMasCritico {
-    if (_sectores.isEmpty) return '—';
-    final top = _sectores.reduce((a, b) =>
-    (a['probabilidad_promedio'] as num) > (b['probabilidad_promedio'] as num)
-        ? a
-        : b);
-    return 'Sector ${top['sector']}';
+  Map<String, dynamic>? get _sectorMasCriticoData {
+    if (_sectores.isEmpty) return null;
+    return _sectores.reduce((a, b) =>
+      (a['probabilidad_promedio'] as num) > (b['probabilidad_promedio'] as num) ? a : b);
+  }
+
+  List<Map<String, dynamic>> get _sectoresCriticos {
+    final Map<String, int> totalPorSector = {};
+    final Map<String, int> altosPorSector = {};
+
+    for (final pred in _prediccionesPorCuadrante) {
+      final cuadrante = pred['cuadrante']?.toString() ?? '';
+      final sectorMatch = RegExp(r'^(\d+)').firstMatch(cuadrante);
+      final sector = sectorMatch?.group(1) ?? '?';
+      totalPorSector[sector] = (totalPorSector[sector] ?? 0) + 1;
+      
+      final nivel = pred['nivel_riesgo'];
+      final prob = (pred['probabilidad_promedio'] as num?)?.toDouble() ?? 0.0;
+      final isAlto = nivel == 2 || nivel == 'ALTO' || (nivel == null && prob > 0.66);
+      
+      if (isAlto) {
+        altosPorSector[sector] = (altosPorSector[sector] ?? 0) + 1;
+      }
+    }
+
+    final result = altosPorSector.entries.map((e) {
+      final total = totalPorSector[e.key] ?? 1;
+      return {
+        'sector': e.key,
+        'altos': e.value,
+        'total': total,
+        'porcentaje': e.value / total,
+      };
+    }).toList();
+
+    result.sort((a, b) => (b['porcentaje'] as double).compareTo(a['porcentaje'] as double));
+    return result.take(5).toList();
+  }
+
+  Map<String, int> get _mapaIncidentesPorFranja {
+    final Map<String, int> result = {};
+    for (final item in _incidentesPorFranja) {
+      final franjaRaw = item['franja_horaria']?.toString() ?? '';
+      final franja = AppConstants.franjaCorta(franjaRaw);
+      // El backend devuelve el campo como 'cantidad', no 'total'
+      final total = (item['cantidad'] as num?)?.toInt() ?? 0;
+      if (franja.isNotEmpty) result[franja] = total;
+    }
+    return result;
   }
 
   @override
@@ -187,22 +248,65 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Row(
+        titleSpacing: 16,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.shield, color: AppTheme.primary, size: 22),
-            const SizedBox(width: 8),
-            Text('Hola, ${nombre.split(' ').first}'),
+            Text(
+              'Hola, ${nombre.split(' ').first}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Row(
+              children: [
+                const Icon(Icons.access_time, color: AppTheme.primary, size: 12),
+                const SizedBox(width: 4),
+                Text(
+                  AppConstants.franjaCorta(AppConstants.getFranjaActual()),
+                  style: const TextStyle(
+                    color: AppTheme.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () => context.push('/agente/perfil'),
+          GestureDetector(
+            onTap: () => context.push('/agente/perfil'),
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  nombre.split(' ').map((p) => p.isNotEmpty ? p[0] : '').take(2).join(),
+                  style: const TextStyle(
+                    color: AppTheme.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildSkeleton()
           : RefreshIndicator(
         color: AppTheme.primary,
         backgroundColor: AppTheme.surface,
@@ -213,24 +317,62 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Selector de sector — filtra las alertas de abajo
               _buildSectorSelector(),
               const SizedBox(height: 16),
-
-              // KPIs principales
               _buildKpiCards(),
               const SizedBox(height: 24),
-
-              // Acceso rápido al mapa
-              _buildMapaPreview(context),
+              _buildSectoresCriticos(),
               const SizedBox(height: 24),
-
-              // Últimas alertas del sector seleccionado
-              _buildUltimasAlertas(context),
+              _buildIncidentesPorFranja(),
               const SizedBox(height: 30),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSkeleton() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Skeleton chips
+          Container(height: 36, decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(20),
+          )),
+          const SizedBox(height: 16),
+          // Skeleton KPI cards
+          Row(children: [
+            Expanded(child: Container(height: 100, decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ))),
+            const SizedBox(width: 12),
+            Expanded(child: Container(height: 100, decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ))),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: Container(height: 100, decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ))),
+            const SizedBox(width: 12),
+            Expanded(child: Container(height: 100, decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ))),
+          ]),
+          const SizedBox(height: 24),
+          Container(height: 200, decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(16),
+          )),
+        ],
       ),
     );
   }
@@ -262,6 +404,9 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
 
   // Tarjetas KPI: alertas, sector crítico, F1-Score y total incidentes
   Widget _buildKpiCards() {
+    final sectorCritico = _sectorMasCriticoData;
+    final valorSectorCritico = sectorCritico != null ? 'Sector ${sectorCritico['sector']}' : '—';
+
     return Column(
       children: [
         Row(
@@ -281,7 +426,7 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
             Expanded(
               child: _KpiCard(
                 titulo: 'Sector Más Crítico',
-                valor: _sectorMasCritico,
+                valor: valorSectorCritico,
                 icono: Icons.location_on,
                 color: AppTheme.riskHigh,
                 subtitulo: 'Mayor riesgo promedio',
@@ -324,81 +469,44 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
     );
   }
 
-  // Vista previa del mapa — toca para ir al mapa completo
-  Widget _buildMapaPreview(BuildContext context) {
+  Widget _buildSectoresCriticos() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(
-          titulo: 'Mapa de Riesgo',
-          onVerTodos: () => context.push('/agente/mapa'),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () => context.push('/agente/mapa'),
-          child: Container(
-            height: 130,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceVariant,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.border),
-            ),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.background.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppTheme.primary.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.map, color: AppTheme.primary, size: 16),
-                    SizedBox(width: 8),
-                    Text(
-                      'Abrir Mapa Interactivo',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+        Row(
+          children: [
+            const Text(
+              'Sectores Críticos del Día',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Lista de últimas alertas filtradas por sector
-  Widget _buildUltimasAlertas(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(
-          titulo: 'Últimas Alertas',
-          onVerTodos: () => context.push('/agente/alertas'),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sectores con más cuadrantes en riesgo ALTO en la franja horaria actual. Se actualiza automáticamente.'),
+                  duration: Duration(seconds: 3),
+                ),
+              ),
+              child: const Icon(Icons.info_outline, color: AppTheme.textMuted, size: 16),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
-        if (_alertasFiltradas.isEmpty)
+        if (_sectoresCriticos.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppTheme.border),
             ),
             child: const Text(
-              'No hay alertas activas en este momento.',
+              'Sin sectores en riesgo ALTO en la franja actual',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
             ),
@@ -411,72 +519,136 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
               border: Border.all(color: AppTheme.border),
             ),
             child: Column(
-              children: _alertasFiltradas.take(4).map((alerta) {
-                final color = alerta.probabilidad > 0.66
-                    ? AppTheme.riskHigh
-                    : AppTheme.riskMed;
+              children: _sectoresCriticos.asMap().entries.map((entry) {
+                final i = entry.key;
+                final s = entry.value;
+                final nombre = AppConstants.nombresSectores[s['sector']] ?? '';
+                final pct = (s['porcentaje'] as double);
+                final isLast = i == _sectoresCriticos.length - 1;
                 return Container(
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                          color: AppTheme.border, width: 0.5),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    border: isLast ? null : const Border(
+                      bottom: BorderSide(color: AppTheme.border, width: 0.5),
                     ),
                   ),
-                  child: ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        color: color,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      'Sector ${alerta.sector} — ${alerta.cuadrante ?? "-"}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Text(
-                      alerta.franjaHoraria ?? '-',
-                      style: const TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${(alerta.probabilidad * 100).toStringAsFixed(1)}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 13,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Sector ${s['sector']}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (nombre.isNotEmpty)
+                                Text(
+                                  nombre,
+                                  style: const TextStyle(
+                                    color: AppTheme.textMuted,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                        Text(
-                          alerta.probabilidad > 0.66 ? 'ALTO' : 'MEDIO',
-                          style: TextStyle(
-                            color: color,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppTheme.riskHigh.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.warning_rounded, color: AppTheme.riskHigh, size: 12),
+                                SizedBox(width: 4),
+                                Text(
+                                  'ALTO',
+                                  style: TextStyle(
+                                    color: AppTheme.riskHigh,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: pct,
+                                backgroundColor: AppTheme.background,
+                                valueColor: const AlwaysStoppedAnimation(AppTheme.riskHigh),
+                                minHeight: 6,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            '${s['altos']} de ${s['total']} cuadrantes · ${(pct * 100).toStringAsFixed(0)}%',
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 );
               }).toList(),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildIncidentesPorFranja() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Incidentes por Franja',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Cantidad histórica de incidentes registrados por turno del día. Útil para identificar en qué franjas reforzar el patrullaje.'),
+                  duration: Duration(seconds: 3),
+                ),
+              ),
+              child: const Icon(Icons.info_outline, color: AppTheme.textMuted, size: 16),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        BarChartCard(
+          titulo: '',
+          data: _mapaIncidentesPorFranja,
+          color: AppTheme.riskHigh,
+        ),
       ],
     );
   }
@@ -539,12 +711,16 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
+        border: Border(
+          left: BorderSide(color: color, width: 4),
+          top: const BorderSide(color: AppTheme.border),
+          right: const BorderSide(color: AppTheme.border),
+          bottom: const BorderSide(color: AppTheme.border),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
