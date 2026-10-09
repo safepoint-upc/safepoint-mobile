@@ -37,6 +37,25 @@ class IncidentesService {
     }
   }
 
+  /// Versión liviana para el heatmap: devuelve solo [[lat, lng], ...] sin parsear el modelo completo.
+  /// Es la fuente de datos para el KDE del mapa — mismo endpoint, sin overhead de deserialización.
+  Future<List<List<double>>> getCoordenadasHeatmap() async {
+    try {
+      final response = await _dio.get('/incidentes/mapa');
+      final data = response.data as List;
+      final coords = <List<double>>[];
+      for (final e in data) {
+        final lat = (e['latitud'] as num?)?.toDouble();
+        final lng = (e['longitud'] as num?)?.toDouble();
+        if (lat != null && lng != null) coords.add([lat, lng]);
+      }
+      return coords;
+    } catch (e) {
+      debugPrint('ERROR getCoordenadasHeatmap: $e');
+      return [];
+    }
+  }
+
   // Obtiene estadísticas generales: total, por tipo de delito y por sector
   Future<Map<String, dynamic>> getEstadisticas() async {
     try {

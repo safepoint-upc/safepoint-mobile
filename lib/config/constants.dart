@@ -30,16 +30,17 @@ class AppConstants {
   static const Map<String, String> nombresSectores = {
     '1': 'Club Lawn Tennis / Lima',
     '2': 'Campo de Marte / Av. Brasil',
-    '3': 'Parque Castilla / Av. Arenales',
-    '4': 'Plaza Jesús María / Av. Arequipa',
-    '5': 'Av. Salaverry / Residencial Orrantia',
-    '6': 'Parque Reducto / Corpac',
-    '7': 'Av. Faustino Sánchez Carrión',
-    '8': 'Parque Las Américas / Av. Pershing',
-    '9': 'Av. General Garzón / Mercado Central',
+    '3': 'Hospital Rebagliati / Círculo Militar',
+    '4': 'Comisaría / Jr. Huáscar',
+    '5': 'Colegio Arquitectos / Mello Franco',
+    '6': 'IPD / Jr. Huamachuco',
+    '7': 'Hospital Militar / Pueblo Libre',
+    '8': 'Univ. del Pacífico / Derrama Magisterial',
+    '9': 'Residencial San Felipe / Real Plaza Salaverry',
   };
 
   // ── Cuadrantes que pertenecen a cada sector ─────────────────────────────────
+  // Coincide al 100% con zonificacion.js del dashboard web
   static const Map<String, List<String>> sectorCuadrantes = {
     '1': ['1A1', '1A2', '1B1', '1B2', '1C1', '1C2'],
     '2': ['2A1', '2A2', '2B1', '2B2', '2C1', '2C2'],
@@ -47,9 +48,9 @@ class AppConstants {
     '4': ['4A1', '4A2', '4B1', '4B2', '4C1', '4C2'],
     '5': ['5A1', '5A2', '5B1', '5B2', '5C1', '5C2'],
     '6': ['6A1', '6A2', '6B1', '6B2', '6C1', '6C2'],
-    '7': ['7A',  '7B',  '7C',  '7D'],
-    '8': ['8A',  '8B',  '8C',  '8D'],
-    '9': ['9A',  '9B',  '9C',  '9D'],
+    '7': ['7A1', '7A2', '7B1', '7B2', '7C1', '7C2'],
+    '8': ['8A1', '8A2', '8B1', '8B2', '8C1', '8C2'],
+    '9': ['9A', '9B', '9C', '9D'],
   };
 
   // ── Coordenadas [lat, lng] del centroide de cada cuadrante ─────────────────
@@ -99,11 +100,23 @@ class AppConstants {
     '6C1': [-12.07684712, -77.04994364],
     '6C2': [-12.07900244, -77.04994364],
     // Sector 7
+    '7A1': [-12.06822584, -77.05214512],
+    '7A2': [-12.07038116, -77.05214512],
+    '7B1': [-12.06822584, -77.05214512],
+    '7B2': [-12.07038116, -77.05214512],
+    '7C1': [-12.07253648, -77.05214512],
+    '7C2': [-12.07469180, -77.05214512],
     '7A': [-12.06822584, -77.05214512],
     '7B': [-12.07038116, -77.05214512],
     '7C': [-12.07253648, -77.05214512],
     '7D': [-12.07469180, -77.05214512],
     // Sector 8
+    '8A1': [-12.07684712, -77.05214512],
+    '8A2': [-12.07900244, -77.05214512],
+    '8B1': [-12.07684712, -77.05214512],
+    '8B2': [-12.07900244, -77.05214512],
+    '8C1': [-12.08115776, -77.05214512],
+    '8C2': [-12.08331308, -77.05214512],
     '8A': [-12.07684712, -77.05214512],
     '8B': [-12.07900244, -77.05214512],
     '8C': [-12.08115776, -77.05214512],
@@ -138,10 +151,13 @@ class AppConstants {
     return [sumLat / count, sumLng / count];
   }
 
-  // ── Devuelve la franja horaria actual según la hora del dispositivo ─────────
+  // ── Devuelve la franja horaria actual forzando la hora de Lima (UTC-5) ──────
   // Retorna la cadena en el formato exacto del backend ('De HH:MM a HH:MM H.')
   static String getFranjaActual() {
-    final hora = DateTime.now().hour;
+    // Obtenemos la hora UTC y restamos 5 horas (Lima no usa horario de verano)
+    // Esto asegura que la franja siempre sea correcta sin importar la zona horaria del dispositivo
+    final hora = DateTime.now().toUtc().subtract(const Duration(hours: 5)).hour;
+    
     if (hora < 3)  return franjasHorarias[0]; // 00:00-02:59
     if (hora < 6)  return franjasHorarias[1]; // 03:00-05:59
     if (hora < 9)  return franjasHorarias[2]; // 06:00-08:59

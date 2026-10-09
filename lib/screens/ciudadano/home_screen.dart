@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../../theme/app_theme.dart';
 import 'mapa_screen.dart';
 import 'estadisticas_screen.dart';
 
@@ -14,44 +12,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    MapaScreen(),
-    EstadisticasScreen(),
-  ];
+  // Igual que el agente: inicializado en initState como late final
+  late final List<Widget> _screens;
 
-  // Vuelve al welcome — el ciudadano no tiene sesión que cerrar
-  void _salir(BuildContext context) {
-    context.go('/welcome');
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const MapaScreen(),
+      const EstadisticasScreen(),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    // Solo Scaffold + IndexedStack + BottomNavigationBar — sin AppBar aquí.
+    // Cada pantalla tiene su propio Scaffold con su propio AppBar.
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.shield, color: AppTheme.primary, size: 20),
-            SizedBox(width: 8),
-            Text('SafePoint'),
-          ],
-        ),
-        actions: [
-          // Botón para volver a la pantalla de bienvenida
-          TextButton.icon(
-            onPressed: () => _salir(context),
-            icon: const Icon(Icons.arrow_back, color: AppTheme.textSecondary, size: 18),
-            label: const Text(
-              'Salir',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-            ),
-          ),
-        ],
-      ),
-      body: _screens[_currentIndex],
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (i) => setState(() => _currentIndex = i),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.map_outlined),

@@ -67,44 +67,30 @@ class PrediccionesService {
     }
   }
 
-// Obtiene todas las predicciones y las agrupa por cuadrante localmente
-// El backend no tiene endpoint por cuadrante — igual que el dashboard web
+  // Obtiene todas las predicciones y devuelve la lista cruda con cuadrante, sector y nivel_riesgo.
+  // Igual que hace el dashboard web con getPredicciones({ por_pagina: 6000 }).
+  // Si se pasa franjaHoraria se filtra por ella (usado en las pantallas de mapa).
+  // Desde home_screen se llama sin filtros para obtener todos los datos como el web.
   Future<List<Map<String, dynamic>>> getPrediccionesPorCuadrante({
     String? franjaHoraria,
     DateTime? fecha,
   }) async {
     try {
-      final Map<String, dynamic> params = {
-        'pagina': 1,
-        'por_pagina': 6000,
-      };
+      final Map<String, dynamic> params = {'pagina': 1, 'por_pagina': 6000};
       if (franjaHoraria != null) params['franja_horaria'] = franjaHoraria;
       if (fecha != null) params['fecha'] = fecha.toIso8601String().split('T').first;
 
       final response = await _dio.get('/predicciones/', queryParameters: params);
       final List<dynamic> data = response.data['datos'] ?? [];
-
-      // Agrupa por cuadrante y calcula probabilidad promedio
-      final Map<String, List<double>> porCuadrante = {};
-      final Map<String, int?> nivelRiesgoPorCuadrante = {};
-
-      for (final item in data) {
-        final cuadrante = item['cuadrante']?.toString();
-        if (cuadrante == null) continue;
-        porCuadrante.putIfAbsent(cuadrante, () => []);
-        porCuadrante[cuadrante]!.add((item['probabilidad'] as num?)?.toDouble() ?? 0.0);
-        nivelRiesgoPorCuadrante[cuadrante] = item['nivel_riesgo'] as int?;
-      }
-
-      return porCuadrante.entries.map((entry) {
-        final probs = entry.value;
-        final promedio = probs.reduce((a, b) => a + b) / probs.length;
-        return {
-          'cuadrante': entry.key,
-          'probabilidad_promedio': promedio,
-          'nivel_riesgo': nivelRiesgoPorCuadrante[entry.key],
-        };
-      }).toList();
+      return data
+          .where((item) => item['cuadrante'] != null)
+          .map((item) => {
+                'cuadrante': item['cuadrante']?.toString() ?? '',
+                'sector': item['sector']?.toString() ?? '',
+                'nivel_riesgo': item['nivel_riesgo'] as int?,
+                'probabilidad': (item['probabilidad'] as num?)?.toDouble() ?? 0.0,
+              })
+          .toList();
     } catch (e) {
       debugPrint('ERROR getPrediccionesPorCuadrante: $e');
       return [];

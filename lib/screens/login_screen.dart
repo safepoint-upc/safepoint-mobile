@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Credenciales incorrectas'),
+          content: Text('Credenciales incorrectas. Verifica tu email y contraseña.'),
           backgroundColor: AppTheme.riskHigh,
         ),
       );

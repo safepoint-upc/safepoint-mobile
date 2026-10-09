@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_logo.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -17,50 +18,12 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               const Spacer(flex: 2),
 
-              // Logo
-              Container(
-                width: 88,
+              // Logo heráldico oficial del dashboard web + Nombre de la app
+              const SafePointLogoHeader(
+                width: 80,
                 height: 88,
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: AppTheme.primary.withValues(alpha: 0.35),
-                    width: 1.5,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.shield_outlined,
-                  size: 48,
-                  color: AppTheme.primary,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Nombre de la app
-              RichText(
-                text: const TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Safe',
-                      style: TextStyle(
-                        fontSize: 38,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Point',
-                      style: TextStyle(
-                        fontSize: 38,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
+                showWordmark: true,
+                fontSize: 38,
               ),
               const SizedBox(height: 10),
 

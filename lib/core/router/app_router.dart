@@ -6,8 +6,6 @@ import '../../screens/login_screen.dart';
 import '../../screens/agente/home_screen.dart' as agente;
 import '../../screens/agente/mapa_screen.dart' as agente;
 import '../../screens/agente/predicciones_screen.dart' as agente;
-import '../../screens/agente/alertas_screen.dart' as agente;
-import '../../screens/agente/incidentes_screen.dart' as agente;
 import '../../screens/agente/perfil_screen.dart' as agente;
 import '../../screens/ciudadano/home_screen.dart' as ciudadano;
 import '../../screens/ciudadano/mapa_screen.dart' as ciudadano;
@@ -65,14 +63,6 @@ class AppRouter {
         GoRoute(
           path: '/agente/predicciones',
           builder: (_, __) => const agente.PrediccionesScreen(),
-        ),
-        GoRoute(
-          path: '/agente/alertas',
-          builder: (_, __) => const agente.AlertasScreen(),
-        ),
-        GoRoute(
-          path: '/agente/incidentes',
-          builder: (_, __) => const agente.IncidentesScreen(),
         ),
         GoRoute(
           path: '/agente/perfil',
