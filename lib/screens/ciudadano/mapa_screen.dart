@@ -11,6 +11,7 @@ import '../../config/constants.dart';
 import '../../models/prediccion.dart';
 import '../../services/predicciones_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_logo.dart';
 import '../../widgets/map_control_button.dart';
 import '../../widgets/map_legend_item.dart';
 
@@ -634,15 +635,46 @@ class _MapaScreenState extends State<MapaScreen> {
             ],
           ),
 
-          // Indicador de carga sutil sobre el mapa
-          if (_isLoading)
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-            ),
+          // Pantalla de carga limpia (oculta la carga de tiles y centroides iniciales)
+          AnimatedOpacity(
+            opacity: _isLoading ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: _isLoading
+                ? Container(
+                    color: AppTheme.background,
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SafePointLogoHeader(
+                            width: 64,
+                            height: 70,
+                            showWordmark: false,
+                          ),
+                          SizedBox(height: 20),
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'Cargando mapa...',
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
 
           // Barra de búsqueda + Botón de capas (Solo si NO es pantalla completa)
           if (!_isFullScreen)
