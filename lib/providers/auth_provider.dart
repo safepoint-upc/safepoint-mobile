@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../models/usuario.dart';
 import '../services/auth_service.dart';
 
@@ -19,7 +19,16 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     
-    _usuario = await _authService.getMe();
+    try {
+      // Si el servidor de Render está dormido, le damos un timeout máximo de 5 segundos
+      // Si expira, asumimos que no hay sesión activa y dejamos que el usuario avance a /welcome
+      _usuario = await _authService.getMe().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+    } catch (e) {
+      _usuario = null;
+    }
     
     _isLoading = false;
     notifyListeners();
