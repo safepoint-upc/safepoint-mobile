@@ -18,18 +18,16 @@ class AppRouter {
   AppRouter(this._authProvider) {
     router = GoRouter(
       initialLocation: '/splash',
-      // refreshListenable escucha cambios en AuthProvider y re-evalúa
-      // el redirect automáticamente sin recrear el router
       refreshListenable: _authProvider,
       redirect: (context, state) {
         final isAuthenticated = _authProvider.isAuthenticated;
-        final isLoading = _authProvider.isLoading;
+        final isCheckingAuth = _authProvider.isCheckingAuth;
         final location = state.matchedLocation;
 
-        if (isLoading) return '/splash';
+        if (isCheckingAuth) return '/splash';
 
         if (isAuthenticated &&
-            (location == '/login' || location == '/welcome')) {
+            (location == '/splash' || location == '/login' || location == '/welcome')) {
           return _authProvider.usuario!.esAgente ? '/agente' : '/ciudadano';
         }
 

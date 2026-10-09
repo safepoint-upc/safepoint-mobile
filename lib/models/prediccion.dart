@@ -24,16 +24,20 @@ class Prediccion {
   });
 
   factory Prediccion.fromJson(Map<String, dynamic> json) => Prediccion(
-    id: json['id'],
-    fechaPrediccion: DateTime.parse(json['fecha_prediccion']),
-    franjaHoraria: json['franja_horaria'],
-    sector: json['sector'],
-    cuadrante: json['cuadrante'],
-    probabilidad: (json['probabilidad'] as num).toDouble(),
-    nivelRiesgo: json['nivel_riesgo'],
+    id: json['id'] ?? 0,
+    fechaPrediccion: json['fecha_prediccion'] != null
+        ? (DateTime.tryParse(json['fecha_prediccion'].toString()) ?? DateTime.now())
+        : DateTime.now(),
+    franjaHoraria: json['franja_horaria']?.toString(),
+    sector: json['sector']?.toString(),
+    cuadrante: json['cuadrante']?.toString(),
+    probabilidad: (json['probabilidad'] as num?)?.toDouble() ?? 0.0,
+    nivelRiesgo: json['nivel_riesgo'] as int?,
     latitud: json['latitud'] != null ? (json['latitud'] as num).toDouble() : null,
     longitud: json['longitud'] != null ? (json['longitud'] as num).toDouble() : null,
-    creadoEn: DateTime.parse(json['creado_en']),
+    creadoEn: json['creado_en'] != null
+        ? (DateTime.tryParse(json['creado_en'].toString()) ?? DateTime.now())
+        : DateTime.now(),
   );
 
   String get nivelRiesgoTexto {

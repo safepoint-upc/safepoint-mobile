@@ -144,30 +144,36 @@ class _MapaScreenState extends State<MapaScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    // Phase 1: Load GeoJSON immediately so map renders in <50ms without black loading screen
+    try {
+      final geoData = await _loadGeoJson();
+      if (geoData != null && mounted) {
+        _calculateGeometryCentroids(geoData);
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('ERROR GeoJSON inicial agente: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+
+    // Phase 2: Fetch predictions & heatmap in background without blocking map rendering
     try {
       final results = await Future.wait([
-        _loadGeoJson(),
         _prediccionesService.getPrediccionesMapa(franjaHoraria: _franjaActual),
         _incidentesService.getCoordenadasHeatmap(),
       ]);
 
       if (mounted) {
-        final geoData = results[0] as Map<String, dynamic>?;
-        if (geoData != null) {
-          _calculateGeometryCentroids(geoData);
-        }
-
         setState(() {
-          _prediccionesPorCuadrante = results[1] as List<Prediccion>;
-          _coordenadasHeatmap = results[2] as List<List<double>>;
-          _isLoading = false;
+          _prediccionesPorCuadrante = results[0] as List<Prediccion>;
+          _coordenadasHeatmap = results[1] as List<List<double>>;
         });
         _generateHeatmap();
       }
     } catch (e) {
-      debugPrint('ERROR _loadData: $e');
-      if (mounted) setState(() => _isLoading = false);
+      debugPrint('ERROR _loadData agente background: $e');
     }
   }
 

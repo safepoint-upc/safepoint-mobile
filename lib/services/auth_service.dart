@@ -16,11 +16,9 @@ class AuthService {
       final token = await _storage.read(key: 'token');
       if (token == null || token.isEmpty) return null;
 
-      // Un JWT tiene 3 partes separadas por '.': header.payload.signature
       final parts = token.split('.');
       if (parts.length != 3) return null;
 
-      // El payload está en Base64Url — normalizamos a Base64 estándar
       String payload = parts[1];
       switch (payload.length % 4) {
         case 2:
@@ -39,7 +37,6 @@ class AuthService {
 
       if (email.isEmpty) return null;
 
-      // Construimos el Usuario con los datos del token (id=0 porque es lectura local)
       return Usuario(
         id: 0,
         nombre: email.split('@').first,
@@ -59,8 +56,22 @@ class AuthService {
         data: {'email': email, 'password': password},
       );
       final token = response.data['access_token'];
+      if (token == null) return {'success': false, 'message': 'Token no recibido'};
       await _storage.write(key: 'token', value: token);
-      final usuario = await getMe();
+
+      // Decodificación de respaldo inmediata del JWT
+      Usuario? usuario = await getUserFromToken();
+
+      // Intentar obtener perfil completo de getMe() sin romper si falla
+      try {
+        final me = await getMe();
+        if (me != null) usuario = me;
+      } catch (e) {
+        debugPrint('WARN getMe tras login: $e');
+      }
+
+      if (usuario == null) return {'success': false, 'message': 'No se pudo leer el usuario'};
+
       return {'success': true, 'usuario': usuario};
     } catch (e) {
       debugPrint('ERROR LOGIN: $e');

@@ -7,8 +7,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:dio/dio.dart';
+import 'package:provider/provider.dart';
 import '../../config/constants.dart';
 import '../../models/prediccion.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/predicciones_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_logo.dart';
@@ -135,29 +137,32 @@ class _MapaScreenState extends State<MapaScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    // Phase 1: Load GeoJSON immediately so map renders in <50ms without black loading screen
     try {
-      final results = await Future.wait([
-        _loadGeoJson(),
-        _prediccionesService.getPrediccionesMapa(
-          franjaHoraria: AppConstants.getFranjaActual(),
-        ),
-      ]);
-
-      if (mounted) {
-        final geoData = results[0] as Map<String, dynamic>?;
-        if (geoData != null) {
-          _calculateGeometryCentroids(geoData);
-        }
-
+      final geoData = await _loadGeoJson();
+      if (geoData != null && mounted) {
+        _calculateGeometryCentroids(geoData);
         setState(() {
-          _prediccionesPorCuadrante = results[1] as List<Prediccion>;
           _isLoading = false;
         });
       }
     } catch (e) {
-      debugPrint('ERROR _loadData ciudadano: $e');
+      debugPrint('ERROR GeoJSON inicial: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+
+    // Phase 2: Fetch predictions in background without blocking map rendering
+    try {
+      final predicciones = await _prediccionesService.getPrediccionesMapa(
+        franjaHoraria: AppConstants.getFranjaActual(),
+      );
+      if (mounted && predicciones.isNotEmpty) {
+        setState(() {
+          _prediccionesPorCuadrante = predicciones;
+        });
+      }
+    } catch (e) {
+      debugPrint('ERROR _loadData ciudadano predicciones: $e');
     }
   }
 
@@ -497,7 +502,10 @@ class _MapaScreenState extends State<MapaScreen> {
               ),
               actions: [
                 TextButton.icon(
-                  onPressed: () => context.go('/welcome'),
+                  onPressed: () async {
+                    await Provider.of<AuthProvider>(context, listen: false).logout();
+                    if (context.mounted) context.go('/welcome');
+                  },
                   icon: const Icon(Icons.arrow_back, color: AppTheme.textSecondary, size: 18),
                   label: const Text(
                     'Salir',

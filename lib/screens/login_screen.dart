@@ -169,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
               CustomButton(
                 text: 'Iniciar sesión',
                 onPressed: _login,
-                isLoading: authProvider.isLoading,
+                isLoading: authProvider.isLoggingIn,
               ),
               const SizedBox(height: 40),
               Center(

@@ -1,4 +1,4 @@
-﻿class Usuario {
+class Usuario {
   final int id;
   final String nombre;
   final String email;
@@ -12,8 +12,8 @@
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) => Usuario(
-    id: json['id'],
-    nombre: json['nombre'] ?? '',
+    id: json['id'] ?? 0,
+    nombre: json['nombre'] ?? json['email']?.toString().split('@').first ?? 'Usuario',
     email: json['email'] ?? '',
     rol: json['rol'] ?? 'ciudadano',
   );
