@@ -21,16 +21,16 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _navigate() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    // Espera máxima total de 3.5 segundos para no congelar la pantalla de carga
+    // Espera a que checkAuth() termine (es lectura local, dura <200ms)
+    // pero ponemos un tope de 2 segundos como margen de seguridad absoluto
     int elapsed = 0;
-    while (authProvider.isLoading && elapsed < 3500) {
-      await Future.delayed(const Duration(milliseconds: 150));
-      elapsed += 150;
+    while (authProvider.isLoading && elapsed < 2000) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      elapsed += 100;
       if (!mounted) return;
     }
     if (!mounted) return;
 
-    // Redirige según si hay sesión activa y cuál es el rol del usuario
     if (authProvider.isAuthenticated && authProvider.usuario != null) {
       context.go(authProvider.usuario!.esAgente ? '/agente' : '/ciudadano');
     } else {

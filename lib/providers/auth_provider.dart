@@ -15,21 +15,14 @@ class AuthProvider extends ChangeNotifier {
     checkAuth();
   }
 
+  /// Verifica la sesión leyendo el token JWT guardado localmente.
+  /// No hace ninguna llamada a red — es instantáneo.
   Future<void> checkAuth() async {
     _isLoading = true;
     notifyListeners();
-    
-    try {
-      // Si el servidor de Render está dormido, le damos un timeout máximo de 5 segundos
-      // Si expira, asumimos que no hay sesión activa y dejamos que el usuario avance a /welcome
-      _usuario = await _authService.getMe().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => null,
-      );
-    } catch (e) {
-      _usuario = null;
-    }
-    
+
+    _usuario = await _authService.getUserFromToken();
+
     _isLoading = false;
     notifyListeners();
   }
