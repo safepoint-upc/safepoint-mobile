@@ -388,9 +388,9 @@ class _MapaScreenState extends State<MapaScreen> {
 
         return Polygon(
           points: points,
-          color: color.withValues(alpha: 0.21),
-          borderStrokeWidth: 1.5,
-          borderColor: color.withValues(alpha: 1.0),
+          color: color.withValues(alpha: 0.18),
+          borderStrokeWidth: 1.2,
+          borderColor: color.withValues(alpha: 0.85),
           isDotted: false,
         );
       } else {
@@ -493,8 +493,8 @@ class _MapaScreenState extends State<MapaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const darkTile = 'https://api.maptiler.com/maps/basic-v2-dark/256/{z}/{x}/{y}.png?key=jPBrASxMmEi3FPAa6tvR';
-    const lightTile = 'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=jPBrASxMmEi3FPAa6tvR';
+    const darkTile = 'https://api.maptiler.com/maps/streets-v2-dark/256/{z}/{x}/{y}@2x.png?key=jPBrASxMmEi3FPAa6tvR';
+    const lightTile = 'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}@2x.png?key=jPBrASxMmEi3FPAa6tvR';
     final tileUrl = _isDarkMode ? darkTile : lightTile;
 
     return Scaffold(
@@ -512,8 +512,8 @@ class _MapaScreenState extends State<MapaScreen> {
                       AppConstants.jesusMariaLng,
                     ),
                     initialZoom: 14.5,
-                    maxZoom: 16,
-                    minZoom: 12,
+                    maxZoom: 19.0,
+                    minZoom: 11.5,
                     interactionOptions: const InteractionOptions(
                       flags: InteractiveFlag.all,
                     ),
@@ -529,11 +529,12 @@ class _MapaScreenState extends State<MapaScreen> {
                     },
                   ),
                   children: [
-                    // 1. Capa base del mapa (MapTiler Dark / Streets)
+                    // 1. Capa base del mapa con calles HD (MapTiler Streets Dark / Streets v2 @2x)
                     TileLayer(
                       urlTemplate: tileUrl,
                       userAgentPackageName: 'com.safepoint.mobile',
-                      maxZoom: 19,
+                      maxZoom: 19.0,
+                      maxNativeZoom: 19,
                     ),
                     // 2. Capa de heatmap de densidad de incidentes (si activo)
                     if (_mostrarHeatmap && _heatmapImage != null)

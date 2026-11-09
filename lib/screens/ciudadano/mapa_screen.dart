@@ -350,9 +350,9 @@ class _MapaScreenState extends State<MapaScreen> {
 
         return Polygon(
           points: points,
-          color: color.withValues(alpha: 0.21),
-          borderStrokeWidth: 1.5,
-          borderColor: color.withValues(alpha: 1.0),
+          color: color.withValues(alpha: 0.18),
+          borderStrokeWidth: 1.2,
+          borderColor: color.withValues(alpha: 0.85),
         );
       } else {
         return Polygon(
@@ -478,10 +478,9 @@ class _MapaScreenState extends State<MapaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const darkTile = 'https://api.maptiler.com/maps/basic-v2-dark/256/{z}/{x}/{y}.png?key=jPBrASxMmEi3FPAa6tvR';
-    const lightTile = 'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=jPBrASxMmEi3FPAa6tvR';
+    const darkTile = 'https://api.maptiler.com/maps/streets-v2-dark/256/{z}/{x}/{y}@2x.png?key=jPBrASxMmEi3FPAa6tvR';
+    const lightTile = 'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}@2x.png?key=jPBrASxMmEi3FPAa6tvR';
     final tileUrl = _isDarkMode ? darkTile : lightTile;
-    final maxZoomTile = _isDarkMode ? 16.0 : 18.0;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -524,8 +523,8 @@ class _MapaScreenState extends State<MapaScreen> {
                 AppConstants.jesusMariaLng,
               ),
               initialZoom: 14.5,
-              maxZoom: 18,
-              minZoom: 12,
+              maxZoom: 19.0,
+              minZoom: 11.5,
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.all,
               ),
@@ -540,17 +539,16 @@ class _MapaScreenState extends State<MapaScreen> {
               },
             ),
             children: [
-              // 1. TileLayer (siempre)
+              // 1. TileLayer con calles HD (Streets v2 / Streets Dark v2 en @2x)
               TileLayer(
                 urlTemplate: tileUrl,
                 userAgentPackageName: 'com.safepoint.mobile',
-                maxZoom: maxZoomTile,
+                maxZoom: 19.0,
+                maxNativeZoom: 19,
               ),
-              // 2. PolygonLayer(_buildEstructuraPoligonos()) — siempre
+              // 2. Capa de cuadrantes y riesgo
               PolygonLayer(polygons: _buildEstructuraPoligonos()),
-              // 3. PolygonLayer(_buildPolygons()) — si riesgo ON
-              if (_mostrarRiesgo) PolygonLayer(polygons: _buildPolygons()),
-              // 4. PolygonLayer(_buildSectorOutlines()) — si riesgo OFF
+              // 3. PolygonLayer(_buildSectorOutlines()) — si riesgo OFF
               if (!_mostrarRiesgo) PolygonLayer(polygons: _buildSectorOutlines()),
               // 5. MarkerLayer de labels de sector — siempre (zoom < 14.8)
               if (_zoomActual < 14.8)
