@@ -266,7 +266,7 @@ class _EstadisticasScreenState extends State<EstadisticasScreen> {
                 ),
               ),
               const Text(
-                'Enero 2023 — Marzo 2026',
+                'Enero 2023 — Septiembre 2026',
                 style: TextStyle(
                   color: AppTheme.textMuted,
                   fontSize: 10,
