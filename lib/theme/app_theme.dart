@@ -9,7 +9,7 @@ class AppTheme {
   static const Color textSecondary = Color(0xFF94a3b8);
   static const Color textMuted = Color(0xFF64748b);
   static const Color riskHigh = Color(0xFFef4444);
-  static const Color riskMed = Color(0xFFf97316);
+  static const Color riskMed = Color(0xFFf59e0b);
   static const Color riskLow = Color(0xFF22c55e);
   static const Color cardColor = Color(0xFF1e293b);
 
