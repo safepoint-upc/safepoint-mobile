@@ -180,13 +180,13 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
                 ? 'Riesgo MEDIO'
                 : 'Riesgo BAJO';
         final prob = (top['probabilidad'] as num?)?.toDouble() ?? 0.0;
-        final probPct = (prob * 100).toStringAsFixed(1);
+        final probPct = (prob * 100).round().toString();
 
         return {
           'titulo': 'Cuadrante Más Crítico',
           'valor': cuad,
           'subtitulo': '$nivelStr ($probPct% certeza)',
-          'tooltip': 'Cuadrante de mayor riesgo en el sector seleccionado. El porcentaje indica la certeza del modelo XGBoost en su predicción, no la probabilidad de que ocurra un delito.',
+          'tooltip': 'Indica qué tan seguro está el modelo del nivel que asignó, no la probabilidad de que ocurra un delito. Es una estimación aproximada y no debe leerse como un valor exacto.',
         };
       }
 
@@ -194,7 +194,7 @@ class _AgenteHomeTabState extends State<AgenteHomeTab> {
         'titulo': 'Cuadrante Más Crítico',
         'valor': 'Sector $_sectorSeleccionado',
         'subtitulo': AppConstants.nombresSectores[_sectorSeleccionado] ?? 'Sector $_sectorSeleccionado',
-        'tooltip': 'Cuadrante de mayor riesgo en el sector seleccionado. El porcentaje indica la certeza del modelo XGBoost en su predicción, no la probabilidad de que ocurra un delito.',
+        'tooltip': 'Indica qué tan seguro está el modelo del nivel que asignó, no la probabilidad de que ocurra un delito. Es una estimación aproximada y no debe leerse como un valor exacto.',
       };
     }
 

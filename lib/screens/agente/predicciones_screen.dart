@@ -658,7 +658,7 @@ class _PrediccionesScreenState extends State<PrediccionesScreen> {
             itemBuilder: (context, index) {
               final item = cuadrantes[index];
               final orden = index + 1;
-              final probPct = (item.probabilidad * 100).toStringAsFixed(1);
+              final probPct = (item.probabilidad * 100).round().toString();
               final nivel = item.nivelRiesgo ?? 0;
               final colorNivel = AppTheme.riskColor(
                 nivel == 2 ? 'ALTO' : nivel == 1 ? 'MEDIO' : 'BAJO',
